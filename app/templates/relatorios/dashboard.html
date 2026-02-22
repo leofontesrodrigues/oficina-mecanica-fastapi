@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3><i class="bi bi-graph-up-arrow"></i> Relatórios</h3>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-danger"
+               href="/relatorios/ordens-servico.pdf?date_from={{ date_from }}&date_to={{ date_to }}&status={{ status }}">
+                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+            </a>
+            <a class="btn btn-outline-success"
+               href="/relatorios/ordens-servico.csv?date_from={{ date_from }}&date_to={{ date_to }}&status={{ status }}">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV
+            </a>
+        </div>
+    </div>
+
+    <form method="get" class="card card-body mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Data inicial</label>
+                <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Data final</label>
+                <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="orcamento" {% if status == "orcamento" %}selected{% endif %}>Orçamento</option>
+                    <option value="reprovada" {% if status == "reprovada" %}selected{% endif %}>Reprovada</option>
+                    <option value="aberta" {% if status == "aberta" %}selected{% endif %}>Aberta</option>
+                    <option value="em_andamento" {% if status == "em_andamento" %}selected{% endif %}>Em andamento</option>
+                    <option value="finalizada" {% if status == "finalizada" %}selected{% endif %}>Finalizada</option>
+                    <option value="cancelada" {% if status == "cancelada" %}selected{% endif %}>Cancelada</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-grid">
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="card"><div class="card-body"><small class="text-muted">Total OS</small><h4>{{ total_os }}</h4></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card"><div class="card-body"><small class="text-muted">Orçamentos</small><h4>{{ total_orcamentos }}</h4></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card"><div class="card-body"><small class="text-muted">Reprovadas</small><h4>{{ total_reprovadas }}</h4></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card"><div class="card-body"><small class="text-muted">Em execução</small><h4>{{ total_abertas }}</h4></div></div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="card"><div class="card-body"><small class="text-muted">Finalizadas</small><h4>{{ total_finalizadas }}</h4></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card"><div class="card-body"><small class="text-muted">Canceladas</small><h4>{{ total_canceladas }}</h4></div></div>
+        </div>
+        <div class="col-md-6">
+            <div class="card"><div class="card-body"><small class="text-muted">Faturamento (OS finalizadas)</small><h4>R$ {{ "%.2f"|format(total_faturado) }}</h4></div></div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <small class="text-muted">Total pago</small>
+                    <h4>R$ {{ "%.2f"|format(total_pago) }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Top clientes</div>
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Qtd OS</th>
+                        <th>Valor OS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in top_clientes %}
+                    <tr>
+                        <td>{{ item.cliente_nome }}</td>
+                        <td>{{ item.qtd_os }}</td>
+                        <td>R$ {{ "%.2f"|format(item.valor_os) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-center text-muted">Sem dados</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Últimas OS (amostra)</div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Cliente</th>
+                        <th>Veículo</th>
+                        <th>Status</th>
+                        <th>Abertura</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for os in ordens %}
+                    <tr>
+                        <td>#{{ os.id }}</td>
+                        <td>{{ os.cliente.nome }}</td>
+                        <td>{{ os.veiculo.placa }}</td>
+                        <td>{{ os.status }}</td>
+                        <td>{{ os.data_abertura.strftime("%d/%m/%Y") if os.data_abertura else "-" }}</td>
+                        <td>R$ {{ "%.2f"|format(os.valor_total) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center text-muted">Sem ordens de serviço</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

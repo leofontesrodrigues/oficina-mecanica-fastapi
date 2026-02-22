@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico de Estoque{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>
+            <i class="bi bi-clock-history"></i>
+            Histórico de Estoque
+        </h3>
+        <a href="/pecas" class="btn btn-secondary">
+            Voltar para Peças
+        </a>
+    </div>
+
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-6">
+            <input type="text"
+                   name="search"
+                   class="form-control"
+                   placeholder="Pesquisar por nome ou código da peça..."
+                   value="{{ search }}">
+        </div>
+        <div class="col-md-3">
+            <select name="tipo" class="form-select">
+                <option value="">Todos os tipos</option>
+                <option value="entrada" {% if tipo == "entrada" %}selected{% endif %}>Entrada</option>
+                <option value="saida" {% if tipo == "saida" %}selected{% endif %}>Saída</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-grid">
+            <button type="submit" class="btn btn-outline-primary">
+                <i class="bi bi-search"></i> Filtrar
+            </button>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Peça</th>
+                    <th>Tipo</th>
+                    <th>Origem</th>
+                    <th>Qtd</th>
+                    <th>Antes</th>
+                    <th>Depois</th>
+                    <th>Usuário</th>
+                    <th>Obs.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in movimentacoes %}
+                <tr>
+                    <td>{{ m.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+                    <td>{{ m.peca.nome }} ({{ m.peca.codigo }})</td>
+                    <td>
+                        {% if m.tipo == "entrada" %}
+                        <span class="badge bg-success">Entrada</span>
+                        {% else %}
+                        <span class="badge bg-danger">Saída</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ m.origem }}</td>
+                    <td>{{ m.quantidade }}</td>
+                    <td>{{ m.estoque_anterior }}</td>
+                    <td>{{ m.estoque_posterior }}</td>
+                    <td>
+                        {% if m.usuario %}
+                            {{ m.usuario.nome }}
+                        {% elif m.usuario_id %}
+                            ID {{ m.usuario_id }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ m.observacao or "-" }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted">
+                        Nenhuma movimentação encontrada
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if total_pages > 1 %}
+    <nav>
+        <ul class="pagination justify-content-center">
+            {% if page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page - 1 }}&search={{ search }}&tipo={{ tipo }}">
+                    Anterior
+                </a>
+            </li>
+            {% endif %}
+
+            {% for p in range(1, total_pages + 1) %}
+            <li class="page-item {% if p == page %}active{% endif %}">
+                <a class="page-link" href="?page={{ p }}&search={{ search }}&tipo={{ tipo }}">
+                    {{ p }}
+                </a>
+            </li>
+            {% endfor %}
+
+            {% if page < total_pages %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page + 1 }}&search={{ search }}&tipo={{ tipo }}">
+                    Próxima
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+</div>
+{% endblock %}

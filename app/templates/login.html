@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Garagem 90 - Oficina Mecânica</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/style.css?v=7" rel="stylesheet">
+</head>
+<body class="bg-light d-flex flex-column justify-content-center login-page" style="min-height: 100vh;">
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-5 col-lg-4">
+            <div class="card shadow-sm login-card border-0">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <img src="/static/img/logo.jpeg"
+                             alt="Logo Oficina Mecânica"
+                             class="login-logo mb-2">
+                        <h4 class="mb-1">
+                            Acesso ao Sistema
+                        </h4>
+                        <p class="text-muted small mb-0">
+                            Garagem 90 - Oficina Mecânica
+                        </p>
+                    </div>
+
+                    {% if success %}
+                    <div class="alert alert-success" role="alert">
+                        {{ success }}
+                    </div>
+                    {% endif %}
+
+                    {% if error %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" action="/auth/login">
+                        <div class="mb-3">
+                            <label class="form-label">E-mail</label>
+                            <input type="email" name="email" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Senha</label>
+                            <input type="password" name="senha" class="form-control" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            Entrar
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <a href="/auth/esqueci-senha">Esqueci minha senha</a>
+                    </div>
+                </div>
+            </div>
+
+            {% if show_default_admin_hint %}
+            <p class="text-center text-muted mt-3 mb-0" style="font-size: 0.9rem;">
+            </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<footer class="app-footer public-footer text-center py-2">
+    <small>&copy; {{ request.url.hostname or "Oficina Mecânica" }} - Garagem 90 - Oficina Mecânica</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

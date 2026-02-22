@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Caixa{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3><i class="bi bi-cash-stack"></i> Caixa</h3>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-danger btn-sm"
+               href="/caixa/movimentacoes.pdf?date_from={{ date_from }}&date_to={{ date_to }}">
+                <i class="bi bi-file-earmark-pdf"></i> PDF
+            </a>
+            <a class="btn btn-outline-success btn-sm"
+               href="/caixa/movimentacoes.csv?date_from={{ date_from }}&date_to={{ date_to }}">
+                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            </a>
+        </div>
+    </div>
+
+    <form method="get" class="card card-body mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Data inicial</label>
+                <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Data final</label>
+                <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+            </div>
+            <div class="col-md-4 d-grid">
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-funnel"></i> Filtrar Movimentações
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <small class="text-muted">Status</small>
+                    <h5 class="mb-0">
+                        {% if caixa_aberto %}
+                            <span class="badge bg-success">Aberto</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Fechado</span>
+                        {% endif %}
+                    </h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <small class="text-muted">Saldo atual</small>
+                    <h5 class="mb-0">R$ {{ "%.2f"|format(caixa_referencia.saldo_atual if caixa_referencia else 0) }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <small class="text-muted">Entradas</small>
+                    <h5 class="mb-0 text-success">R$ {{ "%.2f"|format(total_entradas) }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <small class="text-muted">Saídas</small>
+                    <h5 class="mb-0 text-danger">R$ {{ "%.2f"|format(total_saidas) }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            {% if not caixa_aberto %}
+            <form method="post" action="/caixa/abrir" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Saldo inicial</label>
+                    <input type="number" step="0.01" min="0" name="saldo_inicial" class="form-control" value="0.00" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Observação</label>
+                    <input type="text" name="observacao" class="form-control" placeholder="Ex.: abertura do turno manhã">
+                </div>
+                <div class="col-md-3 d-grid">
+                    <button class="btn btn-success" type="submit">
+                        <i class="bi bi-unlock"></i> Abrir Caixa
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Suprimento (entrada)</label>
+                    <form method="post" action="/caixa/suprimento" class="input-group">
+                        <input type="number" step="0.01" min="0.01" name="valor" class="form-control" placeholder="Valor" required>
+                        <input type="text" name="descricao" class="form-control" placeholder="Descrição">
+                        <button class="btn btn-outline-success" type="submit">Lançar</button>
+                    </form>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Sangria (saída)</label>
+                    <form method="post" action="/caixa/sangria" class="input-group">
+                        <input type="number" step="0.01" min="0.01" name="valor" class="form-control" placeholder="Valor" required>
+                        <input type="text" name="descricao" class="form-control" placeholder="Descrição">
+                        <button class="btn btn-outline-danger" type="submit">Lançar</button>
+                    </form>
+                </div>
+                <div class="col-md-4 d-grid">
+                    <form method="post" action="/caixa/fechar">
+                        <label class="form-label">Conferência (valor contado)</label>
+                        <input type="number"
+                               step="0.01"
+                               min="0"
+                               name="valor_contado"
+                               class="form-control mb-2"
+                               value="{{ '%.2f'|format(caixa_aberto.saldo_atual if caixa_aberto else 0) }}"
+                               required>
+                        <input type="text" name="observacao" class="form-control mb-2" placeholder="Observação do fechamento (opcional)">
+                        <button class="btn btn-dark w-100" type="submit">
+                            <i class="bi bi-lock"></i> Fechar Caixa
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if caixa_referencia and caixa_referencia.status == "fechado" %}
+    <div class="alert alert-secondary">
+        <strong>Último fechamento:</strong>
+        Saldo sistema R$ {{ "%.2f"|format(caixa_referencia.saldo_final or 0) }},
+        contado R$ {{ "%.2f"|format(caixa_referencia.valor_contado_fechamento or 0) }},
+        diferença R$ {{ "%.2f"|format(caixa_referencia.diferenca_fechamento or 0) }}.
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">Movimentações</div>
+        <div class="table-responsive">
+            <table class="table table-striped mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Categoria</th>
+                        <th>Forma</th>
+                        <th>Descrição</th>
+                        <th class="text-end">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in movimentos %}
+                    <tr>
+                        <td>{{ m.data_movimentacao.strftime("%d/%m/%Y %H:%M") }}</td>
+                        <td>
+                            {% if m.tipo == "entrada" %}
+                                <span class="badge bg-success">Entrada</span>
+                            {% else %}
+                                <span class="badge bg-danger">Saída</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ m.categoria }}</td>
+                        <td>{{ m.forma_pagamento or "-" }}</td>
+                        <td>{{ m.descricao or "-" }}</td>
+                        <td class="text-end">R$ {{ "%.2f"|format(m.valor) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">Nenhuma movimentação registrada</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

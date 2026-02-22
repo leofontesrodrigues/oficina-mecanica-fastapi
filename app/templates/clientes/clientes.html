@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- TÍTULO + BOTÃO NOVO CLIENTE -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Clientes</h2>
+
+        <button class="btn btn-success"
+                data-bs-toggle="modal"
+                data-bs-target="#modalNovoCliente">
+            <i class="bi bi-plus-circle"></i> Novo Cliente
+        </button>
+    </div>
+
+    <!-- PESQUISA -->
+    <form method="get" class="mb-3">
+        <div class="input-group">
+            <input type="text"
+                   name="search"
+                   class="form-control"
+                   placeholder="Pesquisar cliente por nome ou CPF..."
+                   value="{{ search }}">
+
+            <button class="btn btn-outline-primary" type="submit">
+                <i class="bi bi-search"></i> Pesquisar
+            </button>
+        </div>
+    </form>
+
+    <!-- TABELA -->
+    <div class="table-responsive">
+    <table class="table table-striped align-middle clientes-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Foto</th>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>CEP</th>
+                <th>Bairro</th>
+                <th>Telefone</th>
+                <th>Email</th>
+                <th>Endereço</th>
+                <th class="text-center actions-col">Ações</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for cliente in clientes %}
+            <tr>
+                <td>{{ cliente.id }}</td>
+                <td>
+                    {% if cliente.foto_path %}
+                    <img src="{{ cliente.foto_path }}"
+                         alt="Foto de {{ cliente.nome }}"
+                         class="person-thumb">
+                    {% else %}
+                    <i class="bi bi-person-circle text-muted"></i>
+                    {% endif %}
+                </td>
+                <td>{{ cliente.nome }}</td>
+                <td>{{ cliente.cpf_cnpj }}</td>
+                <td>{{ cliente.cep or "-" }}</td>
+                <td>{{ cliente.bairro or "-" }}</td>
+                <td>{{ cliente.telefone }}</td>
+                <td>{{ cliente.email }}</td>
+                <td>{{ cliente.endereco }}</td>
+
+                <td class="text-center actions-col">
+                <div class="d-flex justify-content-center gap-2 flex-nowrap">
+
+                    <a href="/veiculos/cliente/{{ cliente.id }}"
+                    class="btn btn-sm btn-info"
+                    title="Veículos do cliente">
+                        <i class="bi bi-car-front"></i>
+                    </a>
+
+                    <button class="btn btn-sm btn-warning"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editarCliente{{ cliente.id }}">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+
+                    <button class="btn btn-sm btn-danger"
+                            data-bs-toggle="modal"
+                            data-bs-target="#excluirCliente{{ cliente.id }}">
+                        <i class="bi bi-trash"></i>
+                    </button>
+
+                </div>
+            </td>
+            </tr>
+
+            <!-- MODAL EDITAR -->
+            <div class="modal fade"
+                 id="editarCliente{{ cliente.id }}"
+                 tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-scrollable cliente-modal">
+                    <div class="modal-content">
+
+                        <form method="post"
+                              action="/clientes/editar/{{ cliente.id }}"
+                              enctype="multipart/form-data">
+
+                            <div class="modal-header">
+                                <h5 class="modal-title">Editar Cliente</h5>
+                                <button type="button"
+                                        class="btn-close"
+                                        data-bs-dismiss="modal"></button>
+                            </div>
+
+                            <div class="modal-body">
+
+                                <div class="row">
+                                    <div class="col-md-8 mb-3">
+                                        <label class="form-label">Nome</label>
+                                        <input type="text"
+                                               name="nome"
+                                               class="form-control"
+                                               value="{{ cliente.nome }}"
+                                               required minlength="3">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">CPF</label>
+                                        <input type="text"
+                                               name="cpf_cnpj"
+                                               class="form-control cpf"
+                                               value="{{ cliente.cpf_cnpj }}"
+                                               required maxlength="14">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Foto</label>
+                                    <input type="file"
+                                           name="foto"
+                                           class="form-control"
+                                           accept=".jpg,.jpeg,.png,.webp,.gif,image/*">
+                                    <small class="text-muted">Opcional. Envie JPG, PNG, WEBP ou GIF.</small>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Telefone</label>
+                                        <input type="text"
+                                               name="telefone"
+                                               class="form-control telefone"
+                                               value="{{ cliente.telefone }}">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Email</label>
+                                        <input type="email"
+                                               name="email"
+                                               class="form-control"
+                                               value="{{ cliente.email }}">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">CEP</label>
+                                    <input type="text"
+                                           name="cep"
+                                           class="form-control cep"
+                                           value="{{ cliente.cep }}"
+                                           required maxlength="9">
+                                    <small class="text-muted">
+                                        Digite o CEP e pressione Tab para preencher o endereço automaticamente.
+                                    </small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Endereço</label>
+                                    <input type="text"
+                                           name="endereco"
+                                           class="form-control endereco"
+                                           value="{{ cliente.endereco }}">
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-5 mb-3">
+                                        <label class="form-label">Bairro</label>
+                                        <input type="text"
+                                               name="bairro"
+                                               class="form-control bairro"
+                                               value="{{ cliente.bairro }}">
+                                    </div>
+                                    <div class="col-md-5 mb-3">
+                                        <label class="form-label">Cidade</label>
+                                        <input type="text"
+                                               name="cidade"
+                                               class="form-control cidade"
+                                               value="{{ cliente.cidade }}">
+                                    </div>
+                                    <div class="col-md-2 mb-3">
+                                        <label class="form-label">UF</label>
+                                        <input type="text"
+                                               name="uf"
+                                               class="form-control uf"
+                                               maxlength="2"
+                                               value="{{ cliente.uf }}">
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button"
+                                        class="btn btn-secondary"
+                                        data-bs-dismiss="modal">
+                                    Cancelar
+                                </button>
+                                <button type="submit"
+                                        class="btn btn-primary">
+                                    Salvar
+                                </button>
+                            </div>
+
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL EXCLUIR -->
+            <div class="modal fade"
+                id="excluirCliente{{ cliente.id }}"
+                tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+
+                        <form method="post"
+                            action="/clientes/excluir/{{ cliente.id }}">
+
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title">
+                                    Confirmar Exclusão
+                                </h5>
+                                <button type="button"
+                                        class="btn-close btn-close-white"
+                                        data-bs-dismiss="modal">
+                                </button>
+                            </div>
+
+                            <div class="modal-body">
+                                Tem certeza que deseja excluir
+                                <strong>{{ cliente.nome }}</strong>?
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button"
+                                        class="btn btn-secondary"
+                                        data-bs-dismiss="modal">
+                                    Cancelar
+                                </button>
+
+                                <button type="submit"
+                                        class="btn btn-danger">
+                                    Excluir
+                                </button>
+                            </div>
+
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <!-- PAGINAÇÃO -->
+    {% if total_pages > 1 %}
+    <nav>
+        <ul class="pagination justify-content-center">
+
+            {% if page > 1 %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page - 1 }}&search={{ search }}">
+                    Anterior
+                </a>
+            </li>
+            {% endif %}
+
+            {% for p in range(1, total_pages + 1) %}
+            <li class="page-item {% if p == page %}active{% endif %}">
+                <a class="page-link"
+                   href="?page={{ p }}&search={{ search }}">
+                    {{ p }}
+                </a>
+            </li>
+            {% endfor %}
+
+            {% if page < total_pages %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page + 1 }}&search={{ search }}">
+                    Próxima
+                </a>
+            </li>
+            {% endif %}
+
+        </ul>
+    </nav>
+    {% endif %}
+
+</div>
+
+<!-- =========================
+     MODAL NOVO CLIENTE
+========================= -->
+<div class="modal fade"
+     id="modalNovoCliente"
+     tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable cliente-modal">
+        <div class="modal-content">
+
+            <form method="post"
+                  action="/clientes/novo"
+                  enctype="multipart/form-data">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Novo Cliente</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nome</label>
+                            <input type="text"
+                                   name="nome"
+                                   class="form-control"
+                                   required minlength="3">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">CPF</label>
+                            <input type="text"
+                                   name="cpf_cnpj"
+                                   class="form-control cpf"
+                                   required maxlength="14">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Foto</label>
+                        <input type="file"
+                               name="foto"
+                               class="form-control"
+                               accept=".jpg,.jpeg,.png,.webp,.gif,image/*">
+                        <small class="text-muted">Opcional. Envie JPG, PNG, WEBP ou GIF.</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Telefone</label>
+                            <input type="text"
+                                   name="telefone"
+                                   class="form-control telefone">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email"
+                                   name="email"
+                                   class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">CEP</label>
+                        <input type="text"
+                               name="cep"
+                               class="form-control cep"
+                               required maxlength="9">
+                        <small class="text-muted">
+                            Digite o CEP e pressione Tab para preencher o endereço automaticamente.
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Endereço</label>
+                        <input type="text"
+                               name="endereco"
+                               class="form-control endereco">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-5 mb-3">
+                            <label class="form-label">Bairro</label>
+                            <input type="text"
+                                   name="bairro"
+                                   class="form-control bairro">
+                        </div>
+                        <div class="col-md-5 mb-3">
+                            <label class="form-label">Cidade</label>
+                            <input type="text"
+                                   name="cidade"
+                                   class="form-control cidade">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">UF</label>
+                            <input type="text"
+                                   name="uf"
+                                   class="form-control uf"
+                                   maxlength="2">
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-success">
+                        Salvar
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

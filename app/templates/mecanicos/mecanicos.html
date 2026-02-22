@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Mecânicos{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between mb-3">
+
+        <h3>
+            <i class="bi bi-wrench"></i>
+            Mecânicos
+        </h3>
+
+        <button class="btn btn-success"
+                data-bs-toggle="modal"
+                data-bs-target="#modalNovo">
+            <i class="bi bi-plus-circle"></i> Novo
+        </button>
+
+    </div>
+
+    <form method="get" class="mb-3">
+        <div class="input-group">
+            <input type="text"
+                   name="search"
+                   class="form-control"
+                   placeholder="Pesquisar mecânico pelo nome..."
+                   value="{{ search }}">
+            <button class="btn btn-outline-primary" type="submit">
+                <i class="bi bi-search"></i> Pesquisar
+            </button>
+        </div>
+    </form>
+
+    <table class="table table-striped align-middle">
+
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Foto</th>
+                <th>Nome</th>
+                <th>Telefone</th>
+                <th>Especialidade</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+        {% for m in mecanicos %}
+
+            <tr>
+                <td>{{ m.id }}</td>
+                <td>
+                    {% if m.foto_path %}
+                    <img src="{{ m.foto_path }}"
+                         alt="Foto de {{ m.nome }}"
+                         class="person-thumb">
+                    {% else %}
+                    <i class="bi bi-person-circle text-muted"></i>
+                    {% endif %}
+                </td>
+                <td>{{ m.nome }}</td>
+                <td>{{ m.telefone }}</td>
+                <td>{{ m.especialidade }}</td>
+
+                <td>
+                    {% if m.ativo %}
+                        <span class="badge bg-success">Ativo</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Inativo</span>
+                    {% endif %}
+                </td>
+
+                <td>
+
+                    <!-- Editar -->
+                    <button class="btn btn-warning btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalEditar{{ m.id }}">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+
+                    <!-- Excluir -->
+                    <a href="/mecanicos/excluir/{{ m.id }}?page={{ page }}&search={{ search }}"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Deseja excluir?')">
+                        <i class="bi bi-trash"></i>
+                    </a>
+
+                </td>
+            </tr>
+
+
+<!-- MODAL EDITAR -->
+
+<div class="modal fade"
+     id="modalEditar{{ m.id }}"
+     tabindex="-1">
+
+<div class="modal-dialog">
+
+<div class="modal-content">
+
+<form method="post"
+      action="/mecanicos/editar/{{ m.id }}"
+      enctype="multipart/form-data">
+
+<input type="hidden" name="page" value="{{ page }}">
+<input type="hidden" name="search" value="{{ search }}">
+
+<div class="modal-header">
+    <h5>Editar Mecânico</h5>
+    <button class="btn-close"
+            data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+
+    <div class="mb-2">
+        <label>Nome</label>
+        <input class="form-control"
+               name="nome"
+               value="{{ m.nome }}"
+               required>
+    </div>
+
+    <div class="mb-2">
+        <label>Telefone</label>
+        <input class="form-control telefone"
+               name="telefone"
+               value="{{ m.telefone }}">
+    </div>
+
+    <div class="mb-2">
+        <label>Especialidade</label>
+        <input class="form-control"
+               name="especialidade"
+               value="{{ m.especialidade }}">
+    </div>
+
+    <div class="mb-2">
+        <label>Foto</label>
+        <input class="form-control"
+               type="file"
+               name="foto"
+               accept=".jpg,.jpeg,.png,.webp,.gif,image/*">
+    </div>
+
+    <div class="form-check mt-2">
+        <input class="form-check-input"
+               type="checkbox"
+               name="ativo"
+               {% if m.ativo %}checked{% endif %}>
+        <label class="form-check-label">Ativo</label>
+    </div>
+
+</div>
+
+<div class="modal-footer">
+
+   <button type="button"
+        class="btn btn-secondary"
+        data-bs-dismiss="modal">
+        Cancelar
+    </button>
+
+    <button class="btn btn-success">
+        Salvar
+    </button>
+
+</div>
+
+</form>
+</div>
+</div>
+</div>
+
+        {% else %}
+
+            <tr>
+                <td colspan="7"
+                    class="text-center text-muted">
+                    Nenhum mecânico cadastrado
+                </td>
+            </tr>
+
+        {% endfor %}
+
+        </tbody>
+
+    </table>
+
+    {% if total_pages > 1 %}
+    <nav>
+        <ul class="pagination justify-content-center">
+            {% if page > 1 %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page - 1 }}&search={{ search }}">
+                    Anterior
+                </a>
+            </li>
+            {% endif %}
+
+            {% for p in range(1, total_pages + 1) %}
+            <li class="page-item {% if p == page %}active{% endif %}">
+                <a class="page-link"
+                   href="?page={{ p }}&search={{ search }}">
+                    {{ p }}
+                </a>
+            </li>
+            {% endfor %}
+
+            {% if page < total_pages %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page + 1 }}&search={{ search }}">
+                    Próxima
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+</div>
+
+
+<!-- MODAL NOVO -->
+
+<div class="modal fade" id="modalNovo" tabindex="-1">
+
+<div class="modal-dialog">
+
+<div class="modal-content">
+
+<form method="post"
+      action="/mecanicos/novo"
+      enctype="multipart/form-data">
+
+<input type="hidden" name="page" value="{{ page }}">
+<input type="hidden" name="search" value="{{ search }}">
+
+<div class="modal-header">
+    <h5>Novo Mecânico</h5>
+    <button class="btn-close"
+            data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+
+    <div class="mb-2">
+        <label>Nome</label>
+        <input class="form-control"
+               name="nome"
+               required>
+    </div>
+
+    <div class="mb-2">
+        <label>Telefone</label>
+        <input class="form-control telefone"
+               name="telefone">
+    </div>
+
+    <div class="mb-2">
+        <label>Especialidade</label>
+        <input class="form-control"
+               name="especialidade">
+    </div>
+
+    <div class="mb-2">
+        <label>Foto</label>
+        <input class="form-control"
+               type="file"
+               name="foto"
+               accept=".jpg,.jpeg,.png,.webp,.gif,image/*">
+    </div>
+
+    <div class="form-check mt-2">
+        <input class="form-check-input"
+               type="checkbox"
+               name="ativo"
+               checked>
+        <label class="form-check-label">Ativo</label>
+    </div>
+
+</div>
+
+<div class="modal-footer">
+
+    <button type="button"
+        class="btn btn-secondary"
+        data-bs-dismiss="modal">
+        Cancelar
+    </button>
+
+    <button class="btn btn-success">
+        Cadastrar
+    </button>
+
+</div>
+
+</form>
+</div>
+</div>
+</div>
+
+{% endblock %}

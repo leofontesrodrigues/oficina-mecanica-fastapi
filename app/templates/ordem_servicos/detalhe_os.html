@@ -1,0 +1,742 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da OS{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+
+        <h3>
+            <i class="bi bi-clipboard-check"></i>
+            Ordem de Serviço #{{ os.id }}
+        </h3>
+
+        <div class="d-flex gap-2">
+            {% if os.status in ['orcamento', 'reprovada'] %}
+            <a href="/ordens-servico/{{ os.id }}/orcamento.pdf?page={{ page }}&search={{ search }}"
+               class="btn btn-outline-danger">
+                <i class="bi bi-file-earmark-pdf"></i> PDF Orçamento
+            </a>
+            {% endif %}
+            <a href="/ordens-servico/{{ os.id }}/whatsapp?page={{ page }}&search={{ search }}"
+               class="btn btn-success">
+                <i class="bi bi-whatsapp"></i> Enviar WhatsApp
+            </a>
+            <a href="/ordens-servico?page={{ page }}&search={{ search }}"
+               class="btn btn-secondary">
+                Voltar
+            </a>
+        </div>
+
+    </div>
+
+
+    <!-- Informações da OS -->
+    <div class="card mb-4">
+
+        <div class="card-body">
+
+            <div class="row mb-2">
+
+                <div class="col-md-4">
+                    <strong>Cliente:</strong><br>
+                    {{ os.cliente.nome }}
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Veículo:</strong><br>
+                    {{ os.veiculo.modelo }} - {{ os.veiculo.placa }}
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Mecânico:</strong><br>
+                    {% if os.mecanico %}
+                        {{ os.mecanico.nome }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <div class="row mb-2">
+
+                <div class="col-md-4">
+                    <strong>Status:</strong><br>
+                    {{ os.status }}
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Abertura:</strong><br>
+                    {{ os.data_abertura.strftime("%d/%m/%Y %H:%M") }}
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Fechamento:</strong><br>
+                    {% if os.data_fechamento %}
+                        {{ os.data_fechamento.strftime("%d/%m/%Y %H:%M") }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+
+            </div>
+
+            {% if os.observacoes %}
+            <div class="mt-2">
+                <strong>Observações:</strong><br>
+                {{ os.observacoes }}
+            </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= AÇÕES DE STATUS ================= -->
+    {% set perfil = request.session.get('user_perfil') %}
+    {% if os.status in ['orcamento', 'aberta', 'em_andamento'] %}
+    <div class="card mb-4">
+        <div class="card-body d-flex gap-2 flex-wrap">
+
+            {% if os.status == 'orcamento' %}
+            {% if perfil in ['admin', 'atendente'] %}
+                <form method="post" action="/ordens-servico/{{ os.id }}/status">
+                    <input type="hidden" name="page" value="{{ page }}">
+                    <input type="hidden" name="search" value="{{ search }}">
+                    <input type="hidden" name="status" value="aberta">
+                    <button class="btn btn-success">
+                        Aprovar Orçamento
+                    </button>
+                </form>
+                <button class="btn btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalReprovarOrcamento">
+                    Reprovar Orçamento
+                </button>
+            {% endif %}
+            {% endif %}
+
+            {% if os.status == 'aberta' %}
+            <form method="post" action="/ordens-servico/{{ os.id }}/status">
+                <input type="hidden" name="page" value="{{ page }}">
+                <input type="hidden" name="search" value="{{ search }}">
+                <input type="hidden" name="status" value="em_andamento">
+                <button class="btn btn-warning">
+                    Iniciar Atendimento
+                </button>
+            </form>
+            {% endif %}
+
+            {% if os.status == 'em_andamento' %}
+            <form method="post" action="/ordens-servico/{{ os.id }}/status">
+                <input type="hidden" name="page" value="{{ page }}">
+                <input type="hidden" name="search" value="{{ search }}">
+                <input type="hidden" name="status" value="finalizada">
+                <button class="btn btn-primary">
+                    Finalizar OS
+                </button>
+            </form>
+            {% endif %}
+
+            {% if perfil in ['admin', 'atendente'] %}
+            <form method="post" action="/ordens-servico/{{ os.id }}/status">
+                <input type="hidden" name="page" value="{{ page }}">
+                <input type="hidden" name="search" value="{{ search }}">
+                <input type="hidden" name="status" value="cancelada">
+                <button class="btn btn-outline-danger">
+                    Cancelar OS
+                </button>
+            </form>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endif %}
+
+
+    <!-- ================= SERVIÇOS ================= -->
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+
+        <h4>Serviços</h4>
+
+        <button
+            class="btn btn-success"
+            data-bs-toggle="modal"
+            data-bs-target="#modalAdicionarServico"
+            {% if os.status not in ['orcamento', 'aberta', 'em_andamento'] or servicos_catalogo|length == 0 %}disabled{% endif %}
+        >
+            ➕ Adicionar Serviço
+        </button>
+
+    </div>
+
+
+    <table class="table table-bordered mb-4">
+
+        <thead class="table-light">
+            <tr>
+                <th>Descrição</th>
+                <th>Qtd</th>
+                <th>Valor Unit.</th>
+                <th>Total</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for s in servicos_os %}
+            <tr>
+                <td>{{ s.servico.descricao }}</td>
+                <td>{{ s.quantidade }}</td>
+                <td>R$ {{ "%.2f"|format(s.valor_unitario) }}</td>
+                <td>R$ {{ "%.2f"|format(s.quantidade * s.valor_unitario) }}</td>
+                <td>
+                    {% if os.status in ['orcamento', 'aberta', 'em_andamento'] %}
+                    <form method="post" action="/servicos-os/remover/{{ s.id }}" class="d-inline">
+                        <input type="hidden" name="page" value="{{ page }}">
+                        <input type="hidden" name="search" value="{{ search }}">
+                        <button class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Remover serviço da OS?')">
+                            <i class="bi bi-x-circle"></i> Remover
+                        </button>
+                    </form>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    Nenhum serviço adicionado
+                </td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+
+    <!-- ================= PEÇAS ================= -->
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+
+        <h4>Peças</h4>
+
+        <button
+            class="btn btn-success"
+            data-bs-toggle="modal"
+            data-bs-target="#modalAdicionarPeca"
+            {% if os.status not in ['orcamento', 'aberta', 'em_andamento'] %}disabled{% endif %}
+        >
+            ➕ Adicionar Peça
+        </button>
+
+    </div>
+
+
+    <table class="table table-bordered mb-4">
+
+        <thead class="table-light">
+            <tr>
+                <th>Peça</th>
+                <th>Qtd</th>
+                <th>Valor Unit.</th>
+                <th>Total</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for p in pecas_os %}
+            <tr>
+
+                <td>{{ p.peca.nome }}</td>
+
+                <td>{{ p.quantidade }}</td>
+
+                <td>
+                    R$ {{ "%.2f"|format(p.valor_unitario) }}
+                </td>
+
+                <td>
+                    R$ {{ "%.2f"|format(p.valor_unitario * p.quantidade) }}
+                </td>
+
+                <td>
+                    {% if os.status in ['orcamento', 'aberta', 'em_andamento'] %}
+                    <form method="post" action="/os-pecas/remover/{{ p.id }}" class="d-inline">
+                        <input type="hidden" name="page" value="{{ page }}">
+                        <input type="hidden" name="search" value="{{ search }}">
+                        <button class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Remover peça da OS e devolver ao estoque?')">
+                            <i class="bi bi-x-circle"></i> Remover
+                        </button>
+                    </form>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+
+            </tr>
+
+            {% else %}
+            <tr>
+                <td colspan="5"
+                    class="text-center text-muted">
+                    Nenhuma peça adicionada
+                </td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+
+    <!-- ================= PAGAMENTOS ================= -->
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+
+        <h4>Pagamentos</h4>
+
+        {% set perfil = request.session.get('user_perfil') %}
+        {% if perfil in ['admin', 'atendente'] %}
+        <button
+            class="btn btn-success"
+            data-bs-toggle="modal"
+            data-bs-target="#modalRegistrarPagamento"
+            {% if saldo_pendente <= 0 or os.status in ['orcamento', 'cancelada', 'reprovada'] %}disabled{% endif %}
+        >
+            <i class="bi bi-cash-coin"></i> Registrar Pagamento
+        </button>
+        {% endif %}
+
+    </div>
+
+    <table class="table table-bordered mb-4">
+
+        <thead class="table-light">
+            <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Valor</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for pg in pagamentos %}
+            <tr>
+                <td>{{ pg.data_pagamento.strftime("%d/%m/%Y %H:%M") }}</td>
+                <td>{{ pg.tipo|upper }}</td>
+                <td>R$ {{ "%.2f"|format(pg.valor) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" class="text-center text-muted">
+                    Nenhum pagamento registrado
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
+
+
+    <!-- ================= TOTAL ================= -->
+
+    <div class="card">
+
+        <div class="card-body">
+            <div class="row text-end">
+                <div class="col-md-4">
+                    <h6 class="text-muted mb-1">Total da OS</h6>
+                    <h4>R$ {{ "%.2f"|format(os.valor_total) }}</h4>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-muted mb-1">Total Pago</h6>
+                    <h4 class="text-success">R$ {{ "%.2f"|format(total_pago) }}</h4>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-muted mb-1">Saldo Pendente</h6>
+                    <h4 class="{% if saldo_pendente <= 0 %}text-success{% else %}text-danger{% endif %}">
+                        R$ {{ "%.2f"|format(saldo_pendente) }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<div class="modal fade"
+     id="modalReprovarOrcamento"
+     tabindex="-1">
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <form method="post"
+                  action="/ordens-servico/{{ os.id }}/reprovar-orcamento">
+                <input type="hidden" name="page" value="{{ page }}">
+                <input type="hidden" name="search" value="{{ search }}">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Reprovar Orçamento</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <label class="form-label">Motivo da reprovação</label>
+                    <textarea name="motivo"
+                              class="form-control"
+                              rows="4"
+                              minlength="5"
+                              required></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="btn btn-danger">
+                        Confirmar Reprovação
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- ======================================================
+     MODAL REGISTRAR PAGAMENTO
+====================================================== -->
+
+<div class="modal fade"
+     id="modalRegistrarPagamento"
+     tabindex="-1">
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <form
+                method="post"
+                action="/pagamentos/novo/{{ os.id }}"
+            >
+                <input type="hidden" name="page" value="{{ page }}">
+                <input type="hidden" name="search" value="{{ search }}">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Registrar Pagamento</h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                    ></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tipo</label>
+                        <select name="tipo" class="form-select" required>
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">Pix</option>
+                            <option value="cartao">Cartão</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Valor</label>
+                        <input
+                            type="number"
+                            name="valor"
+                            step="0.01"
+                            min="0.01"
+                            class="form-control"
+                            required
+                        >
+                        <small class="text-muted">
+                            Saldo pendente: R$ {{ "%.2f"|format(saldo_pendente) }}
+                        </small>
+                        <br>
+                        <small class="text-muted">
+                            Em pagamento com dinheiro, você pode informar valor recebido maior que o saldo para cálculo de troco.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        class="btn btn-success"
+                    >
+                        Confirmar
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+
+<!-- ======================================================
+     MODAL ADICIONAR SERVIÇO
+====================================================== -->
+
+<div class="modal fade"
+     id="modalAdicionarServico"
+     tabindex="-1">
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <form
+                method="post"
+                action="/servicos-os/novo/{{ os.id }}"
+            >
+                <input type="hidden" name="page" value="{{ page }}">
+                <input type="hidden" name="search" value="{{ search }}">
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title">
+                        Adicionar Serviço
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                    ></button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Serviço do Catálogo
+                        </label>
+
+                        <select
+                            name="servico_id"
+                            class="form-select"
+                            required
+                        >
+                            {% if servicos_catalogo|length == 0 %}
+                            <option value="">Nenhum serviço cadastrado no catálogo</option>
+                            {% endif %}
+                            {% for srv in servicos_catalogo %}
+                            <option value="{{ srv.id }}">
+                                {{ srv.descricao }} (R$ {{ "%.2f"|format(srv.preco_base) }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Quantidade
+                        </label>
+
+                        <input
+                            type="number"
+                            name="quantidade"
+                            min="1"
+                            value="1"
+                            class="form-control"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Valor Unitário
+                        </label>
+
+                        <input
+                            type="number"
+                            name="valor_unitario"
+                            step="0.01"
+                            min="0.01"
+                            placeholder="Opcional (usa preço base se vazio)"
+                            class="form-control"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        {% if servicos_catalogo|length == 0 %}disabled{% endif %}
+                    >
+                        Salvar
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ======================================================
+     MODAL ADICIONAR PEÇA
+====================================================== -->
+
+<div class="modal fade"
+     id="modalAdicionarPeca"
+     tabindex="-1">
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <form
+                method="post"
+                action="/os-pecas/adicionar/{{ os.id }}"
+            >
+                <input type="hidden" name="page" value="{{ page }}">
+                <input type="hidden" name="search" value="{{ search }}">
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title">
+                        Adicionar Peça
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                    ></button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Peça
+                        </label>
+
+                        <select
+                            name="peca_id"
+                            class="form-select"
+                            required
+                        >
+
+                            {% for p in pecas %}
+                            <option value="{{ p.id }}">
+                                {{ p.nome }} (Estoque: {{ p.estoque }})
+                            </option>
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Quantidade
+                        </label>
+
+                        <input
+                            type="number"
+                            name="quantidade"
+                            min="1"
+                            class="form-control"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Salvar
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+{% endblock %}

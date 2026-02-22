@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Ordens de Serviço{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between mb-3">
+
+        <h3>
+            <i class="bi bi-clipboard-check"></i>
+            Ordens de Serviço
+        </h3>
+
+        <button class="btn btn-success"
+                data-bs-toggle="modal"
+                data-bs-target="#modalNovaOS">
+            <i class="bi bi-plus-circle"></i> Novo Orçamento
+        </button>
+
+    </div>
+
+    <form method="get" class="mb-3">
+        <div class="input-group">
+            <input type="text"
+                   name="search"
+                   class="form-control"
+                   placeholder="Pesquisar por cliente, placa, mecânico ou status..."
+                   value="{{ search }}">
+            <button class="btn btn-outline-primary" type="submit">
+                <i class="bi bi-search"></i> Pesquisar
+            </button>
+        </div>
+    </form>
+
+
+    <div class="card shadow-sm">
+    <div class="card-body p-0">
+
+        <table class="table table-hover align-middle mb-0">
+
+            <thead class="table-light">
+                <tr>
+                    <th width="80">ID</th>
+                    <th>Cliente</th>
+                    <th>Veículo</th>
+                    <th>Mecânico</th>
+                    <th>Status</th>
+                    <th>Abertura</th>
+                    <th width="120" class="text-center">Ações</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for os in ordens %}
+
+                <tr>
+
+                    <!-- ID -->
+                    <td>
+                        <span class="fw-bold text-dark">
+                            #{{ os.id }}
+                        </span>
+                    </td>
+
+                    <!-- Cliente -->
+                    <td>
+                        {{ os.cliente.nome }}
+                    </td>
+
+                    <!-- Veículo -->
+                    <td>
+                        {{ os.veiculo.placa }}
+                    </td>
+
+                    <!-- Mecânico -->
+                    <td>
+                        {% if os.mecanico %}
+                            {{ os.mecanico.nome }}
+                        {% else %}
+                            <span class="text-muted">Não definido</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Status -->
+                    <td>
+                        {% if os.status == "orcamento" %}
+                            <span class="badge bg-info text-dark">
+                                Orçamento
+                            </span>
+                        {% elif os.status == "aberta" %}
+                            <span class="badge bg-success">
+                                Aberta
+                            </span>
+                        {% elif os.status == "em_andamento" %}
+                            <span class="badge bg-warning text-dark">
+                                Em andamento
+                            </span>
+                        {% elif os.status == "finalizada" %}
+                            <span class="badge bg-primary">
+                                Finalizada
+                            </span>
+                        {% elif os.status == "cancelada" %}
+                            <span class="badge bg-danger">
+                                Cancelada
+                            </span>
+                        {% elif os.status == "reprovada" %}
+                            <span class="badge bg-dark">
+                                Reprovada
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">
+                                {{ os.status }}
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Data -->
+                    <td>
+                        {{ os.data_abertura.strftime("%d/%m/%Y") }}
+                    </td>
+
+                    <!-- Ações -->
+                    <td class="text-center">
+
+                        <a href="/ordens-servico/{{ os.id }}?page={{ page }}&search={{ search }}"
+                           class="btn btn-sm btn-outline-primary"
+                           title="Visualizar OS">
+                            <i class="bi bi-eye"></i>
+                        </a>
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        Nenhuma OS cadastrada
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+{% if total_pages > 1 %}
+<nav class="mt-3">
+    <ul class="pagination justify-content-center">
+        {% if page > 1 %}
+        <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page - 1 }}&search={{ search }}">
+                Anterior
+            </a>
+        </li>
+        {% endif %}
+
+        {% for p in range(1, total_pages + 1) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
+            <a class="page-link"
+               href="?page={{ p }}&search={{ search }}">
+                {{ p }}
+            </a>
+        </li>
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page + 1 }}&search={{ search }}">
+                Próxima
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+
+<!-- MODAL NOVA OS -->
+
+<div class="modal fade" id="modalNovaOS" tabindex="-1">
+
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <form method="post"
+                  action="/ordens-servico/nova">
+                <input type="hidden" name="page" value="{{ page }}">
+                <input type="hidden" name="search" value="{{ search }}">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Novo Orçamento</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                    <label class="form-label">Cliente</label>
+
+                    <select name="cliente_id"
+                            class="form-select"
+                            required>
+
+                        <option value="">Selecione</option>
+
+                        {% for c in clientes %}
+                            <option value="{{ c.id }}"
+                                    {% if pre_cliente_id and c.id == pre_cliente_id %}selected{% endif %}>
+                                {{ c.nome }}
+                            </option>
+                        {% endfor %}
+
+                    </select>
+                </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Veículo</label>
+
+                        <select name="veiculo_id"
+                                class="form-select"
+                                required>
+
+                            <option value="">Selecione</option>
+
+                            {% for v in veiculos %}
+                                <option value="{{ v.id }}"
+                                        {% if pre_veiculo_id and v.id == pre_veiculo_id %}selected{% endif %}>
+                                    {{ v.placa }} - {{ v.modelo }}
+                                </option>
+                            {% endfor %}
+
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Mecânico</label>
+
+                        <select name="mecanico_id"
+                                class="form-select">
+
+                            <option value="">Não definido</option>
+
+                            {% for m in mecanicos %}
+                                <option value="{{ m.id }}">
+                                    {{ m.nome }} ({{ m.especialidade }})
+                                </option>
+                            {% endfor %}
+
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea name="observacoes"
+                                  class="form-control"
+                                  rows="3"></textarea>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-success">
+                        Criar Orçamento
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+{% if new_os %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var modalElement = document.getElementById("modalNovaOS");
+    if (!modalElement || typeof bootstrap === "undefined") return;
+    var modal = new bootstrap.Modal(modalElement);
+    modal.show();
+});
+</script>
+{% endif %}
+
+{% endblock %}
