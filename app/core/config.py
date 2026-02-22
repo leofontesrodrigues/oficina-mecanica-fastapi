@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Oficina Mecânica"
     DATABASE_URL: str = "postgresql+psycopg2://oficina_user:oficina123@localhost:5432/oficina_db"
+    DB_SSLMODE: str = ""
 
     SECRET_KEY: str = "change-me-in-production"
     SECRET_ALGORITHM: str = "HS256"
